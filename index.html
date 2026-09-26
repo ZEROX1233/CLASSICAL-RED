@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>@iFlexxAura</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+    /* ========== VISUAL DESIGN UPDATED TO RED/WHITE ========== */
+    :root { 
+        --neon-red: #ff3131; 
+        --glass-bg: rgba(35, 0, 0, 0.85); 
+        --inner-box: rgba(15, 0, 0, 0.9);
+        --btn-bg: rgba(255, 255, 255, 0.1);
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+    
+    /* Body changes: Removed flex centering so iframe can sit in background and panel can drag freely */
+    body { background: #000; overflow: hidden; font-family: 'Montserrat', sans-serif;}
+
+    /* Background Iframe for Game Link */
+    #gameFrame {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        border: none;
+        z-index: 1;
+    }
+
+    /* Mini Button (Floating) */
+    #miniContainer { width: 65px; height: 65px; cursor: pointer; position: fixed; bottom: 20px; right: 20px; z-index: 10000;}
+    #miniBtn { 
+        width: 100%; height: 100%; border-radius: 50%; 
+        border: 2px solid var(--neon-red); 
+        background: radial-gradient(circle, var(--neon-red) 0%, #330000 100%); 
+        box-shadow: 0 0 20px rgba(255, 49, 49, 0.6);
+        display: flex; align-items: center; justify-content: center;
+        animation: floatAnim 3s infinite ease-in-out;
+    }
+    #miniBtn::after { content: '✦'; font-size: 26px; color: #fff; text-shadow: 0 0 8px #fff; }
+    @keyframes floatAnim { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+    /* THE MAIN PANEL - Made Absolute for Dragging */
+    #mainModal { 
+        width: 235px; 
+        background: var(--glass-bg); 
+        border: 2px solid var(--neon-red); 
+        border-radius: 40px; 
+        display: none; 
+        flex-direction: column; 
+        padding: 22px; 
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 40px rgba(255, 49, 49, 0.3), inset 0 0 15px rgba(255, 49, 49, 0.1);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        overflow: hidden;
+        z-index: 10001;
+        cursor: grab;
+    }
+    #mainModal:active { cursor: grabbing; }
+
+    .shining-sweep {
+        position: absolute;
+        top: -50%; left: -50%;
+        width: 200%; height: 200%;
+        background: linear-gradient(45deg, transparent 35%, rgba(255, 255, 255, 0.8) 50%, transparent 65%);
+        animation: scanSweep 3.5s infinite linear;
+        pointer-events: none;
+        z-index: 2;
+    }
+    @keyframes scanSweep { 0% { transform: translate(-20%, 20%); } 100% { transform: translate(20%, -20%); } }
+
+    .header { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 15px; z-index: 5; }
+    .header .star { color: var(--neon-red); font-size: 16px; text-shadow: 0 0 10px var(--neon-red); }
+    .header .title { color: #fff; font-size: 14px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+
+    .display-box {
+        background: var(--inner-box);
+        border: 1px solid rgba(255, 49, 49, 0.2);
+        border-radius: 28px;
+        min-height: 115px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 18px;
+        position: relative;
+        z-index: 5;
+        padding: 10px;
+        cursor: default;
+    }
+
+    .result-main { 
+        font-size: 32px; 
+        font-weight: 900; 
+        background: linear-gradient(180deg, #ff3131 20%, #ffffff 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent; 
+        text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        text-align: center;
+    }
+
+    .result-sub { font-size: 10px; color: #ff3131; opacity: 0.9; font-weight: 800; margin-top: 5px; letter-spacing: 1px; text-align: center; text-transform: uppercase; }
+
+    /* MULTI-BUTTON ROW */
+    .btn-row { 
+        width: 100%; 
+        display: flex; 
+        gap: 8px; 
+        justify-content: center; 
+        z-index: 5;
+    }
+
+    .btn-action { 
+        flex: 1; 
+        padding: 12px 0;
+        border-radius: 35px; 
+        background: var(--btn-bg); 
+        color: #fff; 
+        border: 1.5px solid rgba(255, 255, 255, 0.25); 
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 800;
+        font-size: 10px;
+        cursor: pointer;
+        text-transform: uppercase;
+        transition: 0.3s;
+        min-width: 0;
+    }
+    .btn-action:active { transform: scale(0.92); background: rgba(255, 255, 255, 0.2); }
+
+    /* Red Spinner */
+    .spinner {
+        width: 35px; height: 35px;
+        border: 4px solid rgba(255, 49, 49, 0.1);
+        border-top-color: var(--neon-red);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* Helper for editable areas so they show visual feedback */
+    [contenteditable="true"] { cursor: text; border-bottom:  rgba(255,49,49,0.5); padding: 0 5px; outline: none;}
+</style>
+</head>
+<body>
+
+<iframe id="gameFrame" src="https://www.dmfirst0.com/#/register?invitationCode=56659101118" title="Background Game"></iframe>
+
+<div id="miniContainer" onclick="openM()">
+    <div id="miniBtn"></div>
+</div>
+
+<div id="mainModal">
+    <div class="shining-sweep"></div>
+
+    <div class="header">
+        <span class="star">✦</span>
+        <span id="headerTitle" class="title">INITIALIZING</span>
+    </div>
+
+    <div class="display-box">
+        <div id="ui-content" style="text-align: center; z-index: 5;"></div>
+    </div>
+
+    <div class="btn-row" id="footerButtons">
+    </div>
+</div>
+
+<script>
+    /* ========== DRAG LOGIC ========== */
+    const modal = document.getElementById('mainModal');
+    let isDragging = false;
+    let offset = [0, 0];
+
+    function startDrag(e) {
+        // Prevent dragging if user is editing text or clicking a button
+        if (e.target.hasAttribute('contenteditable') || e.target.tagName === 'BUTTON') return;
+        
+        isDragging = true;
+        let clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        let clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+        
+        // Remove transform translation for smooth absolute dragging
+        let rect = modal.getBoundingClientRect();
+        modal.style.transform = 'none';
+        modal.style.left = rect.left + 'px';
+        modal.style.top = rect.top + 'px';
+
+        offset = [
+            modal.offsetLeft - clientX,
+            modal.offsetTop - clientY
+        ];
+    }
+
+    function doDrag(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+        let clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        let clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+        
+        modal.style.left = (clientX + offset[0]) + 'px';
+        modal.style.top = (clientY + offset[1]) + 'px';
+    }
+
+    function endDrag() {
+        isDragging = false;
+    }
+
+    // Mouse Events
+    modal.addEventListener('mousedown', startDrag);
+    document.addEventListener('mousemove', doDrag);
+    document.addEventListener('mouseup', endDrag);
+
+    // Touch Events
+    modal.addEventListener('touchstart', startDrag, {passive: false});
+    document.addEventListener('touchmove', doDrag, {passive: false});
+    document.addEventListener('touchend', endDrag);
+
+    /* ========== LOGIC & TEAMBRIDGE ========== */
+    let balance = '0.00'; 
+    let state = 'wingo'; // SET TO WINGO BY DEFAULT FOR TESTING
+    let currentResult = 'READY'; 
+    let isAnimating = false; 
+    let currentPeriod = '0000';
+    let lastGeneratedPeriod = '';
+    let lastCleanBal = -1;
+
+    function getP() { 
+        var d = new Date(); 
+        var m = d.getUTCHours() * 60 + d.getUTCMinutes(); 
+        return String(10001 + m).slice(-4); 
+    }
+
+    function openM(){ 
+        document.getElementById('mainModal').style.display='flex'; 
+        document.getElementById('miniContainer').style.display='none'; 
+        if(typeof TeamBridge !== 'undefined') TeamBridge.resizeView(240, 320); 
+        render(); 
+    }
+
+    function closeM(){ 
+        document.getElementById('mainModal').style.display='none'; 
+        document.getElementById('miniContainer').style.display='flex'; 
+        if(typeof TeamBridge !== 'undefined') TeamBridge.resizeView(85, 85); 
+    }
+
+    function route(r, bal) { 
+        balance = bal; 
+        if (isAnimating) return; 
+        var clean = parseFloat(bal.replace(/[^0-9.-]+/g,'')) || 0;
+        var isBelow = clean < 300; 
+        if (state !== r || (lastCleanBal < 300) !== isBelow) { 
+            state = r; 
+            lastCleanBal = clean;
+            render(); 
+        } 
+    }
+
+    function render() {
+        if(isAnimating) return;
+        const ui = document.getElementById('ui-content');
+        const footer = document.getElementById('footerButtons');
+        const headerTitle = document.getElementById('headerTitle');
+        var cleanBal = parseFloat(balance.replace(/[^0-9.-]+/g,'')) || 0;
+
+        currentPeriod = getP();
+
+        const setBtns = (label, onClick) => {
+            footer.innerHTML = `
+                <button class="btn-action" onclick="${onClick}">${label}</button>
+                <button class="btn-action" onclick="closeM()">HIDE</button>
+            `;
+        };
+
+        if(state === 'reg' || state === 'login') {
+            headerTitle.innerText = "AUTH REQUIRED";
+            ui.innerHTML = `<div class="result-main">LOGIN</div><div class="result-sub">NEW ACCOUNT ONLY</div>`;
+            setBtns("REGISTER", "if(typeof TeamBridge !== 'undefined') TeamBridge.loadUrl('#DOMAIN')");
+        } 
+        else if(cleanBal > 0 && cleanBal < 300) { // Slight fix so test panel doesn't default to low bal
+            headerTitle.innerText = "LOW BALANCE";
+            ui.innerHTML = `<div class="result-main">₹${cleanBal}</div><div class="result-sub">MIN REQ: ₹300</div>`;
+            setBtns("DEPOSIT", "if(typeof TeamBridge !== 'undefined') TeamBridge.loadUrl('#DOMAIN/#/wallet/Recharge')");
+        } 
+        else if(state === 'wingo') {
+            // Period is now editable
+            headerTitle.innerHTML = `PERIOD: <span contenteditable="true" spellcheck="false">${currentPeriod}</span>`;
+            
+            if(currentResult === 'READY') {
+                ui.innerHTML = `<div class="result-main">WAITING</div><div class="result-sub">WINGO 1MIN ACTIVE</div>`;
+                setBtns("GET RESULT", "doFetch()");
+            } else {
+                // Result is now editable
+                ui.innerHTML = `<div class="result-main" contenteditable="true" spellcheck="false">${currentResult}</div><div class="result-sub">SAFE PREDICTION</div>`;
+                setBtns("NEXT RESULT", "doFetch()");
+            }
+        } 
+        else {
+            headerTitle.innerText = "SYSTEM ACTIVE";
+            ui.innerHTML = `<div class="result-main">OFFLINE</div><div class="result-sub">OPEN WINGO 1MIN</div>`;
+            setBtns("OPEN GAME", "if(typeof TeamBridge !== 'undefined') TeamBridge.loadUrl('#DOMAIN/#/home/AllGame?type=1')");
+        }
+    }
+
+    function doFetch() {
+       if(isAnimating) return; 
+       isAnimating = true; 
+       var p = getP(); 
+       const ui = document.getElementById('ui-content');
+       ui.innerHTML = `<div class="spinner"></div>`;
+       
+       setTimeout(function(){ 
+           if (lastGeneratedPeriod !== p) {
+               const sizes = ['BIG', 'SMALL']; 
+               const rSize = sizes[Math.floor(Math.random() * sizes.length)];
+               const rNum = (rSize === 'SMALL') ? Math.floor(Math.random() * 5) : (Math.floor(Math.random() * 5) + 5);
+               currentResult = rSize + ' ' + rNum; 
+               lastGeneratedPeriod = p;
+           }
+           isAnimating = false; 
+           render(); 
+           if(typeof TeamBridge !== 'undefined') TeamBridge.speak(currentResult); 
+       }, 2000); 
+    }
+
+    render();
+</script>
+</body>
+</html>
